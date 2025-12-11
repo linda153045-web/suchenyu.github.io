@@ -1,305 +1,328 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-     <title>BIBORIA: Forest Harmony</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
+  <meta charset="utf-8">
+  <title>BIBORIA: Forest Harmony</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
 
-    <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
-        .hidden { display: none !important; }
-        #start-screen { background: rgba(0, 0, 0, 0.9); color: white; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
-        .btn { pointer-events: auto; background: #8CC63F; color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; transition: background 0.3s; }
-        .btn:hover { background: #6AA535; }
-        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        #interaction-hint { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); color: white; padding: 10px; border-radius: 5px; display: none; font-size: 1rem; }
-        #ensemble-btn { position: absolute; bottom: 30px; right: 30px; width: 100px; height: 100px; border-radius: 50%; background: #007bff; color: white; font-size: 2.5rem; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); transition: background 0.3s; }
-        #ensemble-btn:hover { background: #0056b3; }
-        #loading-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.5rem; background: rgba(0, 0, 0, 0.7); padding: 15px; border-radius: 5px; }
-    </style>
+  <style>
+    /* --- P.15 介面風格設計 --- */
+    @import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+
+    body { margin: 0; overflow: hidden; font-family: 'Varela Round', sans-serif; }
+
+    /* UI 覆蓋層 */
+    #ui-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; /* 讓點擊穿透到 VR 場景 */
+      z-index: 999;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+
+    /* 通用按鈕樣式 */
+    .btn {
+      pointer-events: auto;
+      background: #8CC63F; color: white;
+      border: 4px solid white; border-radius: 50px;
+      padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: scale(0.95); }
+    .hidden { display: none !important; }
+
+    /* 1. 開始畫面 (State A) */
+    #start-screen {
+      background: rgba(255, 255, 255, 0.8);
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      pointer-events: auto;
+    }
+    .logo { font-size: 4rem; color: #5D4037; margin-bottom: 10px; }
+    .subtitle { font-size: 1.5rem; color: #8CC63F; margin-bottom: 30px; }
+
+    /* 2. 遊戲中 HUD (互動提示) */
+    #hud {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    }
+    
+    /* 靠近時的提示框 */
+    #interaction-hint {
+      position: absolute; top: 20%; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 25px; border-radius: 20px;
+      color: #5D4037; font-weight: bold; font-size: 1.2rem;
+      display: none; /* 預設隱藏 */
+      animation: float 2s infinite ease-in-out;
+    }
+    @keyframes float { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-10px);} }
+
+    /* 左上角選單 */
+    .menu-btn {
+      position: absolute; top: 20px; left: 20px;
+      width: 50px; height: 50px; background: #8CC63F; border-radius: 50%;
+      border: 3px solid white; pointer-events: auto; cursor: pointer;
+      display: flex; justify-content: center; align-items: center;
+    }
+
+    /* 右下角合奏按鈕 (State D) */
+    #ensemble-btn {
+      position: absolute; bottom: 30px; right: 30px;
+      width: 80px; height: 80px; border-radius: 50%;
+      background: #8CC63F; color: white; border: 4px solid white;
+      font-size: 2rem; display: flex; justify-content: center; align-items: center;
+      pointer-events: auto; cursor: pointer;
+      box-shadow: 0 0 15px #8CC63F;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.1);} 100% {transform: scale(1);} }
+
+    /* 3. 結尾畫面 (State E) */
+    #end-screen {
+      background: black; color: white;
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 2s; pointer-events: none;
+    }
+
+    /* Loading */
+    #loader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #8CC63F; display: flex; justify-content: center; align-items: center;
+      z-index: 10000; color: white; font-size: 2rem;
+    }
+  </style>
 </head>
 
 <body>
-    <div id="ui-layer">
-        <div id="loading-message">Loading Assets...</div>
+  <audio id="bgm" src="assets/sounds/BGM.mp3" loop preload="auto"></audio>
 
-        <div id="start-screen" class="hidden">
-            <h1>歡迎來到 Biboria VR</h1>
-            <p>點擊開始，尋找您的夥伴並開始合奏！</p>
-            <button class="btn" id="start-btn">開始冒險</button>
-        </div>
+  <div id="loader">Loading Assets...</div>
 
-        <div id="hud" class="hidden">
-            <div id="interaction-hint">🎵 靠近 NPC 即可邀請它加入隊伍！</div>
-            <div id="ensemble-btn" class="hidden">合奏 (B)</div>
-        </div>
+  <div id="ui-layer">
+    
+    <div id="start-screen">
+      <div class="logo">BIBORIA</div>
+      <div class="subtitle">Forest Harmony Journey</div>
+      <button class="btn" id="start-btn">START GAME</button>
     </div>
 
-    <a-scene loading-screen="enabled: false">
-        <a-assets>
-            <video id="bg-video" src="assets/videos/background.mp4" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
-            
-            <audio id="BGM" src="assets/sounds/BGM.mp3" preload="auto" loop="true"></audio>
-            
-            <audio id="audio-frog" src="assets/sounds/frog_sound.mp3" preload="auto"></audio> 
-            <audio id="audio-mushroom" src="assets/sounds/mushroom_sound.mp3" preload="auto"></audio>
-            <audio id="audio-flower" src="assets/sounds/flower_sound.mp3" preload="auto"></audio>
-            <audio id="audio-bird" src="assets/sounds/bird_sound.mp3" preload="auto"></audio>
-            <audio id="audio-rock" src="assets/sounds/rock_sound.mp3" preload="auto"></audio> <a-asset-item id="sheep-model" src="assets/models/sheep.glb"></a-asset-item>
-            <a-asset-item id="frog-model" src="assets/models/frog.glb"></a-asset-item>
-            <a-asset-item id="mushroom-model" src="assets/models/mushroom.glb"></a-asset-item>
-            <a-asset-item id="flower-model" src="assets/models/flower.glb"></a-asset-item>
-            <a-asset-item id="bird-model" src="assets/models/bird.glb"></a-asset-item>
-            <a-asset-item id="tree-model" src="assets/models/tree.glb"></a-asset-item>
-            <a-asset-item id="rock-model" src="assets/models/rock.glb"></a-asset-item> <a-mixin id="speaker-icon" 
-                    geometry="primitive: cone; radius-bottom: 0.15; radius-top: 0.05; height: 0.3" 
-                    material="color: #FFC300; shader: flat" 
-                    rotation="90 0 0" 
-                    scale="0.5 0.5 0.5" 
-                    visible="false"></a-mixin>
-        </a-assets>
+    <div id="hud" class="hidden">
+      <div class="menu-btn">☰</div>
+      <div id="interaction-hint">🎵 靠近顯示圖標即出聲</div>
+      <div id="ensemble-btn" class="hidden">B</div>
+    </div>
 
-        <a-videosphere src="#bg-video" rotation="0 -90 0"></a-videosphere>
-        <a-entity gltf-model="#tree-model" position="10 0 10" scale="2 2 2" rotation="0 45 0"></a-entity>
-        <a-entity gltf-model="#tree-model" position="-10 0 5" scale="1.5 1.5 1.5" rotation="0 135 0"></a-entity>
-        <a-entity gltf-model="#tree-model" position="0 0 -15" scale="2.5 2.5 2.5" rotation="0 220 0"></a-entity>
+    <div id="end-screen" class="hidden">
+      <h1>Grand Concert!</h1>
+      <p>我們下次見！</p>
+    </div>
+  </div>
+
+  <a-scene shadow="type: pcfsoft">
+    
+    <a-assets>
+      <video id="bg-video" src="assets/videos/background.mp4" autoplay loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+
+      <a-asset-item id="sheep-model" src="assets/models/sheep.glb"></a-asset-item>
+      <a-asset-item id="frog-model" src="assets/models/frog.glb"></a-asset-item>
+      <a-asset-item id="mushroom-model" src="assets/models/mushroom.glb"></a-asset-item>
+      <a-asset-item id="bird-model" src="assets/models/bird.glb"></a-asset-item>
+      <a-asset-item id="flower-model" src="assets/models/flower.glb"></a-asset-item>
+      <a-asset-item id="rock-model" src="assets/models/rock.glb"></a-asset-item>
+      <a-asset-item id="tree-model" src="assets/models/tree.glb"></a-asset-item>
+    </a-assets>
+
+    <a-videosphere src="#bg-video" rotation="0 -90 0"></a-videosphere>
+
+    <a-circle rotation="-90 0 0" radius="30" color="#5ea83e" opacity="0.8" shadow="receive: true"></a-circle>
+    
+    <a-entity light="type: ambient; color: #FFF; intensity: 0.8"></a-entity>
+    <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1" shadow></a-entity>
 
 
-        <a-entity id="rig" movement-controls="speed: 0.15" position="0 0 5">
-            <a-entity camera position="0 2 3" look-controls="pointerLockEnabled: true">
-                <a-cursor color="#8CC63F" opacity="0.5" scale="0.5 0.5 0.5" visible="false"></a-cursor>
-            </a-entity>
-            <a-entity id="bibo" gltf-model="#sheep-model" position="0 0.2 -2" rotation="0 180 0" 
-                      scale="0.8 0.8 0.8" bibo-walker bibo-interactor>
-            </a-entity>
-        </a-entity>
+    <a-entity id="rig" movement-controls="speed: 0.15" position="0 0 5">
+      <a-entity camera position="0 2 3" look-controls="pointerLockEnabled: true">
+        <a-cursor color="white" opacity="0.5" scale="0.5 0.5 0.5" visible="false"></a-cursor>
+      </a-entity>
+      <a-entity id="bibo" 
+                gltf-model="#sheep-model" 
+                position="0 0.2 -2" 
+                rotation="0 180 0" 
+                scale="0.4 0.4 0.4"
+                bibo-walker
+                bibo-interactor>
+      </a-entity>
+    </a-entity>
 
-        <a-entity id="frog" gltf-model="#frog-model" position="-3 0.5 -4" scale="0.6 0.6 0.6" 
-                  npc-behavior="type: frog; audioId: #audio-frog; followCount: true"></a-entity>
-        <a-entity id="mushroom" gltf-model="#mushroom-model" position="3 0.5 -3" scale="0.8 0.8 0.8" 
-                  npc-behavior="type: mushroom; audioId: #audio-mushroom; followCount: true"></a-entity>
-        <a-entity id="flower" gltf-model="#flower-model" position="5 0.5 0" scale="1.0 1.0 1.0" 
-                  npc-behavior="type: flower; audioId: #audio-flower; followCount: true"></a-entity>
-        <a-entity id="bird" gltf-model="#bird-model" position="-5 1.5 0" scale="0.7 0.7 0.7" 
-                  npc-behavior="type: bird; audioId: #audio-bird; followCount: true"></a-entity>
-        <a-entity id="rock" gltf-model="#rock-model" position="-5 0.7 2" scale="0.6 0.6 0.6" 
-                  npc-behavior="type: rock; audioId: #audio-rock; followCount: true"></a-entity> <a-plane rotation="-90 0 0" width="30" height="30" color="#5EA83E" shadow="receive: true"></a-plane>
-        <a-entity light="type: ambient; color: #FFF; intensity: 0.8"></a-entity>
-        <a-entity light="type: directional; color: #FFF; intensity: 0.6; castShadow: true" position="-0.5 5 1" shadow></a-entity>
+    <a-entity id="frog" gltf-model="#frog-model" position="-3 0 -4" rotation="0 45 0" scale="0.3 0.3 0.3" npc-behavior="type: frog"></a-entity>
+    <a-entity id="mushroom" gltf-model="#mushroom-model" position="3 0 -3" scale="0.4 0.4 0.4" npc-behavior="type: mushroom"></a-entity>
+    <a-entity id="rock" gltf-model="#rock-model" position="-5 0.5 2" scale="0.6 0.6 0.6" npc-behavior="type: rock"></a-entity>
+    <a-entity id="flower" gltf-model="#flower-model" position="5 0 3" scale="0.8 0.8 0.8" npc-behavior="type: flower">
+        <a-text value="♪" position="0 2 0" color="#FF69B4" align="center" scale="3 3 3" visible="false" id="flower-note"></a-text>
+    </a-entity>
+    <a-entity id="tree" gltf-model="#tree-model" position="0 0 -10" scale="1.5 1.5 1.5" npc-behavior="type: tree"></a-entity>
 
-    </a-scene>
+    <a-entity position="6 0 -8" rotation="0 -30 0">
+        <a-box position="0 1 0" color="#8B4513" depth="2" height="2" width="2"></a-box>
+        <a-cone position="0 2.5 0" color="#A52A2A" radius-bottom="1.5" height="1.5"></a-cone>
+        <a-entity id="bird" gltf-model="#bird-model" position="0 2.2 0" scale="0.2 0.2 0.2" npc-behavior="type: bird"></a-entity>
+    </a-entity>
 
-    <script>
-        // --- 遊戲狀態管理 ---
-        const startScreen = document.getElementById('start-screen');
-        const hud = document.getElementById('hud');
-        const ensembleBtn = document.getElementById('ensemble-btn');
-        const loadingMessage = document.getElementById('loading-message');
-        const bgVideo = document.getElementById('bg-video');
-        const bgm = document.getElementById('BGM');
-        let collectedNpcs = 0;
-        const totalNpcs = 5; // 總共有 5 個 NPC (青蛙、蘑菇、花、鳥、石頭)
+  </a-scene>
 
-        // 隱藏 Loading 畫面，顯示 Start 畫面
-        document.querySelector('a-scene').addEventListener('loaded', function () {
-            loadingMessage.classList.add('hidden');
-            startScreen.classList.remove('hidden');
+  <script>
+    // --- 遊戲狀態管理 ---
+    const startScreen = document.getElementById('start-screen');
+    const hud = document.getElementById('hud');
+    const endScreen = document.getElementById('end-screen');
+    const ensembleBtn = document.getElementById('ensemble-btn');
+    const bgmAudio = document.getElementById('bgm'); 
+    const bgVideo = document.getElementById('bg-video'); // 取得背景影片
+
+    let collectedNpcs = 0; 
+
+    // 移除 Loading
+    document.querySelector('a-scene').addEventListener('loaded', function () {
+      document.getElementById('loader').style.display = 'none';
+    });
+
+    // --- 關鍵修改：點擊開始按鈕時播放音樂與影片 ---
+    document.getElementById('start-btn').addEventListener('click', function() {
+      startScreen.classList.add('hidden');
+      hud.classList.remove('hidden');
+      
+      // 播放背景音樂
+      if(bgmAudio) {
+        bgmAudio.volume = 0.5; 
+        bgmAudio.play().catch(e => console.log("BGM error:", e));
+      }
+
+      // 播放動態背景影片
+      if(bgVideo) {
+        bgVideo.play().catch(e => console.log("Video error:", e));
+      }
+    });
+
+    ensembleBtn.addEventListener('click', function() {
+      hud.classList.add('hidden');
+      endScreen.classList.remove('hidden');
+      endScreen.style.opacity = 1;
+      endScreen.style.pointerEvents = 'auto';
+    });
+
+    // --- Bibo 控制 ---
+    AFRAME.registerComponent('bibo-walker', {
+      init: function () {
+        this.timer = 0; this.isShaking = false; this.baseY = 0.2; 
+      },
+      tick: function (time, timeDelta) {
+        if (!this.isShaking) {
+            this.timer += timeDelta * 0.005;
+            this.el.object3D.position.y = this.baseY + Math.sin(this.timer) * 0.02;
+        }
+      },
+      shake: function() {
+        if(this.isShaking) return;
+        this.isShaking = true;
+        this.el.setAttribute('animation', {
+          property: 'rotation', from: '0 180 0', to: '0 220 0', dir: 'alternate', dur: 150, loop: 4, easing: 'easeInOutQuad'
         });
+        setTimeout(() => {
+          this.el.removeAttribute('animation');
+          this.el.object3D.rotation.set(0, Math.PI, 0); 
+          this.isShaking = false;
+        }, 600);
+      }
+    });
 
-        // 點擊開始按鈕時
-        document.getElementById('start-btn').addEventListener('click', function() {
-            startScreen.classList.add('hidden');
-            hud.classList.remove('hidden');
-            
-            // 播放影片和音樂 (解決瀏覽器自動播放限制)
-            if (bgVideo) bgVideo.play().catch(e => console.error("Video autoplay blocked:", e));
-            if (bgm) bgm.play().catch(e => console.error("Audio autoplay blocked:", e));
-            
-            // 啟用滑鼠鎖定
-            document.querySelector('a-scene').components['look-controls'].requestPointerLock();
-        });
+    // --- 互動偵測 ---
+    AFRAME.registerComponent('bibo-interactor', {
+      tick: function () {
+        let rigPos = new THREE.Vector3();
+        this.el.sceneEl.querySelector('#rig').object3D.getWorldPosition(rigPos);
+        let npcs = document.querySelectorAll('[npc-behavior]');
+        let hintBox = document.getElementById('interaction-hint');
+        let isCloseToAny = false;
 
-        // 點擊合奏按鈕
-        ensembleBtn.addEventListener('click', function() {
-            alert(`恭喜！您已收集到 ${collectedNpcs} 個夥伴，開始合奏！(遊戲結束)`);
-            ensembleBtn.classList.add('hidden');
-        });
-
-        // --- Bibo Walker (保留羊走路動畫) ---
-        AFRAME.registerComponent('bibo-walker', {
-            init: function () {
-                this.timer = 0; this.isShaking = false; this.baseY = 0.2; 
-            },
-            tick: function (time, timeDelta) {
-                if (!this.isShaking) {
-                    this.timer += timeDelta * 0.005;
-                    this.el.object3D.position.y = this.baseY + Math.sin(this.timer) * 0.02;
-                }
-            },
-            shake: function() {
-                if(this.isShaking) return;
-                this.isShaking = true;
-                this.el.setAttribute('animation', {
-                    property: 'rotation', from: '0 180 0', to: '0 220 0', dir: 'alternate', dur: 150, loop: 4, easing: 'easeInOutQuad'
-                });
-                setTimeout(() => {
-                    this.el.removeAttribute('animation');
-                    this.el.object3D.rotation.set(0, Math.PI, 0); 
-                    this.isShaking = false;
-                }, 600);
+        npcs.forEach(npc => {
+          let npcPos = new THREE.Vector3();
+          npc.object3D.getWorldPosition(npcPos);
+          if (rigPos.distanceTo(npcPos) < 4.0) {
+            isCloseToAny = true;
+            let behavior = npc.components['npc-behavior'];
+            if (!behavior.hasInteracted) {
+               behavior.interact(); 
+               this.el.components['bibo-walker'].shake(); 
+               collectedNpcs++;
+               if(collectedNpcs >= 3) document.getElementById('ensemble-btn').classList.remove('hidden');
             }
+          } else {
+            npc.components['npc-behavior'].resume();
+          }
         });
 
-        // --- Bibo Interactor (互動偵測器) ---
-        AFRAME.registerComponent('bibo-interactor', {
-            tick: function () {
-                // 如果開始畫面還沒隱藏，則不執行互動偵測
-                if(document.getElementById('start-screen').classList.contains('hidden') === false) return; 
-                
-                let rigPos = new THREE.Vector3();
-                this.el.sceneEl.querySelector('#rig').object3D.getWorldPosition(rigPos);
-                let npcs = document.querySelectorAll('[npc-behavior]');
-                let hintBox = document.getElementById('interaction-hint');
-                let isCloseToAny = false;
+        hintBox.style.display = isCloseToAny ? 'block' : 'none';
+      }
+    });
 
-                npcs.forEach(npc => {
-                    let npcPos = new THREE.Vector3();
-                    npc.object3D.getWorldPosition(npcPos);
-                    
-                    if (rigPos.distanceTo(npcPos) < 4.0) { // 互動提示範圍
-                        isCloseToAny = true;
-                        let behavior = npc.components['npc-behavior'];
-                        
-                        if (!behavior.hasInteracted) {
-                            // 實際互動觸發範圍更近
-                            if (rigPos.distanceTo(npcPos) < 2.5) { 
-                                behavior.interact(); 
-                                this.el.components['bibo-walker'].shake(); 
-                            }
-                        }
-                    } 
-                });
-                hintBox.style.display = isCloseToAny ? 'block' : 'none';
-            }
-        });
-
-        // --- NPC Behavior (NPC 邏輯) ---
-        AFRAME.registerComponent('npc-behavior', {
-            schema: { 
-                type: { type: 'string', default: 'none' },
-                audioId: { type: 'string', default: '' }, 
-                followSpeed: { type: 'number', default: 0.8 },
-                followCount: { type: 'boolean', default: false },
-            },
-            init: function () {
-                this.isInteracting = false; 
-                this.hasInteracted = false; 
-                this.isFollowing = false;
-                this.player = document.querySelector('#rig');
-                this.audio = this.data.audioId ? document.querySelector(this.data.audioId) : null;
-                
-                // 創建喇叭圖標
-                this.speaker = document.createElement('a-entity');
-                this.speaker.setAttribute('mixin', 'speaker-icon'); 
-                this.speaker.setAttribute('position', '0 1.5 0');
-                this.el.appendChild(this.speaker);
-
-                // 閒置旋轉動畫
-                this.el.setAttribute('animation__idle', { 
-                    property: 'rotation', 
-                    to: '0 360 0', 
-                    dir: 'normal', 
-                    dur: 15000, 
-                    loop: true, 
-                    easing: 'linear' 
-                });
-            },
-            
-            interact: function () {
-                if (this.isInteracting || this.hasInteracted) return; 
-                
-                this.isInteracting = true;
-                this.hasInteracted = true; 
-                
-                if (this.data.followCount) {
-                    collectedNpcs++;
-                    // 更新 HUD 提示
-                    document.getElementById('interaction-hint').textContent = `🎵 已收集 ${collectedNpcs}/${totalNpcs} 個夥伴！`;
-                    // 檢查是否達到合奏人數
-                    if(collectedNpcs >= totalNpcs) document.getElementById('ensemble-btn').classList.remove('hidden');
-                }
-
-                this.el.removeAttribute('animation__idle'); // 移除閒置動畫
-                
-                if (this.audio) {
-                    this.audio.currentTime = 0;
-                    this.audio.play();
-                }
-                
-                if (this.speaker) {
-                    this.speaker.setAttribute('visible', 'true');
-                }
-
-                // 互動彈跳動畫 (3 秒)
-                let originalScale = this.el.object3D.scale.clone();
-                this.el.setAttribute('animation__attn', { 
-                    property: 'scale', 
-                    to: `${originalScale.x*1.1} ${originalScale.y*1.1} ${originalScale.z*1.1}`, 
-                    dir: 'alternate', dur: 200, loop: 7, easing: 'easeOutQuad' 
-                });
-
-                // 3 秒後進入跟隨模式
-                setTimeout(() => {
-                    this.endSequence();
-                }, 3000); 
-            },
-
-            endSequence: function() {
-                this.el.removeAttribute('animation__attn'); 
-                if (this.speaker) {
-                    this.speaker.setAttribute('visible', 'false'); 
-                }
-                this.isInteracting = false;
-                this.isFollowing = true; 
-                // 跟隨狀態的輕微旋轉
-                this.el.setAttribute('animation__follow_idle', {
-                    property: 'rotation', to: '0 10 0', dir: 'alternate', dur: 500, loop: true, easing: 'easeInOutSine'
-                });
-            },
-
-            tick: function (time, timeDelta) {
-                if (this.isFollowing) {
-                    this.doFollow(timeDelta);
-                }
-            },
-
-            doFollow: function(dt) {
-                let playerPos = new THREE.Vector3();
-                this.player.object3D.getWorldPosition(playerPos); 
-                const current = this.el.object3D.position;
-                
-                const direction = playerPos.clone().sub(current);
-                const distance = direction.length();
-                
-                // 距離玩家 2.5 單位內停止追蹤
-                if (distance < 2.5) {
-                    // 讓 NPC 轉向看向玩家 (但保持在原地)
-                    let lookDir = direction.clone().setY(0).normalize();
-                    let targetYRotation = Math.atan2(lookDir.x, lookDir.z) * (180 / Math.PI);
-                    this.el.object3D.rotation.y = THREE.MathUtils.degToRad(targetYRotation);
-                    return;
-                }
-
-                direction.normalize();
-                
-                // 向玩家移動
-                current.add(direction.multiplyScalar(this.data.followSpeed * dt / 1000));
-                this.el.object3D.position.copy(current);
-            }
-        });
-    </script>
+    // --- NPC 行為 ---
+    AFRAME.registerComponent('npc-behavior', {
+      schema: { type: { type: 'string', default: 'none' } },
+      init: function () {
+        this.isInteracting = false; this.hasInteracted = false; this.setupIdleAnimation();
+      },
+      setupIdleAnimation: function () {
+        this.el.removeAttribute('animation__idle');
+        switch (this.data.type) {
+          case 'frog': 
+            this.el.setAttribute('animation__idle', { property: 'scale', from: '0.3 0.3 0.3', to: '0.35 0.28 0.35', dir: 'alternate', dur: 800, loop: true, easing: 'easeInOutSine' }); break;
+          case 'mushroom': 
+            this.el.setAttribute('animation__idle', { property: 'rotation', from: '0 0 -15', to: '0 0 15', dir: 'alternate', dur: 600, loop: true, easing: 'easeInOutQuad' }); break;
+          case 'rock': 
+            this.el.setAttribute('animation__idle', { property: 'rotation', from: '0 0 -45', to: '0 0 45', dir: 'alternate', dur: 1000, loop: true, easing: 'linear' }); break;
+          case 'tree': 
+            this.el.setAttribute('animation__idle', { property: 'rotation', from: '2 0 0', to: '-2 0 0', dir: 'alternate', dur: 4000, loop: true, easing: 'easeInOutSine' }); break;
+          case 'bird': 
+            this.el.setAttribute('animation__idle', { property: 'position', from: '0 2.2 0', to: '0 2.25 0', dir: 'alternate', dur: 200, loop: true, easing: 'easeOutQuad', pauseEvents: 'stop-anim' }); this.startBirdRoutine(); break;
+          case 'flower': this.startFlowerRoutine(); break;
+        }
+      },
+      startBirdRoutine: function() {
+        if(this.birdInterval) clearInterval(this.birdInterval);
+        this.birdInterval = setInterval(() => {
+          if (this.isInteracting) return;
+          this.el.setAttribute('animation__fly', { property: 'position', to: '0 4 0', dir: 'alternate', dur: 1000, loop: 2 });
+          setTimeout(() => { this.el.removeAttribute('animation__fly'); }, 2000);
+        }, 10000); 
+      },
+      startFlowerRoutine: function() {
+        if(this.flowerInterval) clearInterval(this.flowerInterval);
+        this.flowerInterval = setInterval(() => {
+          if (this.isInteracting) return;
+          let note = document.querySelector('#flower-note');
+          if(note) {
+            note.setAttribute('visible', 'true');
+            note.setAttribute('animation', 'property: position; from: 0 2 0; to: 0 4 0; dur: 1500; easing: easeOutQuad');
+            note.setAttribute('animation__fade', 'property: opacity; from: 1; to: 0; dur: 1500; easing: easeOutQuad');
+            setTimeout(() => { note.setAttribute('visible', 'false'); }, 1500);
+          }
+        }, 2500);
+      },
+      interact: function () {
+        if (this.isInteracting) return; this.isInteracting = true; this.hasInteracted = true;
+        this.el.removeAttribute('animation__idle');
+        this.el.setAttribute('animation__attn', { property: 'scale', to: String(this.el.object3D.scale.x * 1.2) + ' ' + String(this.el.object3D.scale.y * 1.2) + ' ' + String(this.el.object3D.scale.z * 1.2), dir: 'alternate', dur: 200, loop: 2 });
+      },
+      resume: function () {
+        if (!this.isInteracting) return; this.isInteracting = false; this.el.removeAttribute('animation__attn'); this.setupIdleAnimation();
+      }
+    });
+  </script>
 </body>
 </html>
-
